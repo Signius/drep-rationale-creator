@@ -15,20 +15,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { org, repo, year, proposalName, rationale } = req.body;
 
-    // Get the user session from the request (cookie-based)
-    const {
-        data: { user },
-    } = await supabase.auth.getUser(req.headers['authorization']?.replace('Bearer ', ''));
-
+    // Get the user from the JWT
+    const accessToken = req.headers['authorization']?.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Get the user's GitHub access token from Supabase user metadata
-    const githubToken = user?.identities?.find((i: any) => i.provider === 'github')?.identity_data?.access_token;
-    if (!githubToken) {
+    // Query the identities table for the GitHub token
+    const { data: identity, error: idError } = await supabase
+        .from('auth.identities')
+        .select('identity_data')
+        .eq('provider', 'github')
+        .eq('user_id', user.id)
+        .single();
+
+    if (!identity || !identity.identity_data?.access_token) {
         return res.status(400).json({ error: 'No GitHub token found for user.' });
     }
+
+    const githubToken = identity.identity_data.access_token;
 
     // Prepare the file path and content
     const filePath = `vote-context/${year}/${proposalName}/Vote_Context.jsonId`;

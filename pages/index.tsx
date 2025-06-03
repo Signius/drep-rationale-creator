@@ -78,9 +78,14 @@ const Home: React.FC = () => {
         setCommitStatus('submitting');
         setCommitError('');
         try {
+            const session = await supabase.auth.getSession();
+            const accessToken = session.data.session?.access_token;
             const res = await fetch('/api/commit-rationale', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                },
                 body: JSON.stringify({
                     org,
                     repo,
@@ -102,6 +107,8 @@ const Home: React.FC = () => {
             setCommitError(err.message || 'Unknown error');
         }
     };
+
+    console.log(user);
 
     return (
         <div className={styles.container}>
