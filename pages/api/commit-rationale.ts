@@ -22,12 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Use a Postgres function to get the GitHub token
-    const { data: tokenData, error: tokenError } = await supabase
-        .rpc('get_github_token', { uid: user.id });
-    const githubToken = tokenData;
+    // Instead of fetching the GitHub token from Supabase, get it from an environment variable
+    const githubToken = process.env.GITHUB_PAT_TOKEN;
     if (!githubToken) {
-        return res.status(400).json({ error: 'No GitHub token found for user.' });
+        return res.status(500).json({ error: 'GitHub Personal Access Token not configured on server.' });
     }
 
     // Prepare the file path and content
