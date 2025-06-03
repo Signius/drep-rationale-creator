@@ -7,6 +7,7 @@ dist/
 build/
 .env
 .env.*
+.next
 
 # VS Code
 .vscode/
