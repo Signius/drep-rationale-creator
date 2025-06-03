@@ -22,19 +22,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Query the identities table for the GitHub token
-    const { data: identity, error: idError } = await supabase
-        .from('auth.identities')
-        .select('identity_data')
-        .eq('provider', 'github')
-        .eq('user_id', user.id)
-        .single();
-
-    if (!identity || !identity.identity_data?.access_token) {
+    // Use a Postgres function to get the GitHub token
+    const { data: tokenData, error: tokenError } = await supabase
+        .rpc('get_github_token', { uid: user.id });
+    const githubToken = tokenData;
+    if (!githubToken) {
         return res.status(400).json({ error: 'No GitHub token found for user.' });
     }
-
-    const githubToken = identity.identity_data.access_token;
 
     // Prepare the file path and content
     const filePath = `vote-context/${year}/${proposalName}/Vote_Context.jsonId`;
